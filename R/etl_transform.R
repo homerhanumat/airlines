@@ -40,21 +40,27 @@ clean_flights <- function(path_zip) {
   # )
   # can't get col_types argument to work!
   # readr::read_csv(path_zip, col_types = col_types) %>%
+  
+  # move away from deprecated SE versions
   readr::read_csv(path_zip) %>%
-    select_(
-      year = ~Year, month = ~Month, day = ~DayofMonth, 
-      dep_time = ~as.numeric(DepTime), sched_dep_time = ~as.numeric(CRSDepTime), dep_delay = ~DepDelay, 
-      arr_time = ~as.numeric(ArrTime), sched_arr_time = ~as.numeric(CRSArrTime), arr_delay = ~ArrDelay, 
-      carrier = ~Carrier,  tailnum = ~TailNum, flight = ~FlightNum,
-      origin = ~Origin, dest = ~Dest, air_time = ~AirTime, distance = ~Distance,
-      cancelled = ~Cancelled, diverted = ~Diverted
+    mutate(dep_time = as.numeric(DepTime), 
+           sched_dep_time = as.numeric(CRSDepTime),
+           arr_time = as.numeric(ArrTime), 
+           sched_arr_time = as.numeric(CRSArrTime)) %>% 
+    select(
+      year = Year, month = Month, day = DayofMonth, 
+      dep_time, sched_dep_time, dep_delay = DepDelay, 
+      arr_time, sched_arr_time, arr_delay = ArrDelay, 
+      carrier = Carrier,  tailnum = TailNum, flight = FlightNum,
+      origin = Origin, dest = Dest, air_time = AirTime, distance = Distance,
+      cancelled = Cancelled, diverted = Diverted
     ) %>%
 #    filter(origin %in% c("JFK", "LGA", "EWR")) %>%
-    mutate_(hour = ~as.numeric(sched_dep_time) %/% 100,
-           minute = ~as.numeric(sched_dep_time) %% 100,
-           time_hour = ~lubridate::make_datetime(year, month, day, hour, minute, 0)) %>%
+    mutate(hour = as.numeric(sched_dep_time) %/% 100,
+           minute = as.numeric(sched_dep_time) %% 100,
+           time_hour = lubridate::make_datetime(year, month, day, hour, minute, 0)) %>%
 #    mutate_(tailnum = ~ifelse(tailnum == "", NA, tailnum)) %>%
-    arrange_(~year, ~month, ~day, ~dep_time) %>%
+    arrange(year, month, day, dep_time) %>%
     readr::write_csv(path = path_csv)
 }
 

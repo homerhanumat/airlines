@@ -121,7 +121,8 @@ init_carriers <- function(obj, ...) {
     arrange_(~carrier)
   
   DBI::dbWriteTable(obj$con, "carriers", 
-                    as.data.frame(carriers), append = TRUE, row.names = FALSE)
+                    as.data.frame(carriers), 
+                    append = TRUE, row.names = FALSE)
 }
 
 #' @importFrom downloader download
@@ -136,22 +137,36 @@ init_airports <- function(obj, ...) {
     downloader::download(src, lcl)
   }
   
+  # clean airports.dat
+  airports <- readLines("dumps/airlines/raw/airports.dat")
+  # airports,data uses \N for NA.  This can fial to parse, so
+  # replace with NA:
+  airports <- gsub("\\\\N", "NA", x = airports)
+  # for some reason the \" in ariport names do not parse so
+  # replace with parens:
+  airports <- gsub('\\\\"(.*)\\\\"', "\\(\\1\\)", x = airports)
+  writeLines(airports, con = lcl)
+  
   raw <- readr::read_csv(lcl, col_names = FALSE)
-  names(raw) <- c("id", "name", "city", "country", "faa", "icao", "lat", "lon", "alt", "tz", "dst", "region")
+  names(raw) <- c("id", "name", "city", "country", "faa",
+                  "icao", "lat", "lon", "alt", "tz", "dst", "region",
+                  "airport", "ourAirport")
   
   airports <- raw %>% 
-    filter_(~country == "United States", ~faa != "") %>%
-    filter_(~name != "Beaufort") %>%
-    select_(~faa, ~name, ~lat, ~lon, ~alt, ~tz, ~dst, ~city, ~country) %>%
-    mutate_(lat = ~as.numeric(lat), lon = ~as.numeric(lon)) %>%
-    arrange_(~faa)
+    filter(country == "United States", faa != "") %>%
+    filter(name != "Beaufort") %>%
+    select(faa, name, lat, lon, alt, tz, dst, city, country) %>%
+    mutate(lat = as.numeric(lat), lon = as.numeric(lon)) %>%
+    arrange(faa)
   
   DBI::dbWriteTable(obj$con, "airports", 
-                    as.data.frame(airports), append = TRUE, row.names = FALSE)
+                    as.data.frame(airports), 
+                    append = TRUE, row.names = FALSE)
 }
 
 init_planes <- function(obj, ...) {
   DBI::dbWriteTable(obj$con, "planes", 
-                    as.data.frame(airlines::planes), append = TRUE, row.names = FALSE)
+                    as.data.frame(airlines::planes), 
+                    append = TRUE, row.names = FALSE)
 }
 
