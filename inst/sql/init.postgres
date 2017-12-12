@@ -1,13 +1,15 @@
+/* used when driver is from package RPostgres */
+
 DROP TABLE IF EXISTS flights CASCADE;
 
 CREATE TABLE flights (  
   year smallint DEFAULT NULL,
   month smallint DEFAULT NULL,
   day smallint DEFAULT NULL,
-  dep_time varchar(4) NOT NULL DEFAULT '',
+  dep_time smallint DEFAULT NULL,
   sched_dep_time smallint DEFAULT NULL,
   dep_delay smallint DEFAULT NULL,
-  arr_time varchar(4) NOT NULL DEFAULT '',
+  arr_time smallint DEFAULT NULL,
   sched_arr_time smallint DEFAULT NULL,
   arr_delay smallint DEFAULT NULL,
   carrier varchar(2) NOT NULL DEFAULT '',
@@ -68,14 +70,3 @@ CREATE TABLE planes (
   engine text,
   PRIMARY KEY (tailnum)
 );
-/*
-# DROP VIEW IF EXISTS summary;
-# CREATE VIEW summary AS 
-# SELECT year, count(distinct month) as numMonths
-# , sum(1) as numFlights
-# , sum(1) / count(distinct concat(month, '-', day)) as avgFlightsPerDay
-# , count(distinct carrier) as numCarriers
-# , count(distinct origin) as numOrigins
-# FROM flights
-# GROUP BY year;
-*/

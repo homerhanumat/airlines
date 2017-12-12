@@ -97,7 +97,17 @@ etl_init.etl_airlines <- function(obj, script = NULL,
 push_month <- function(obj, csv, ...) {
   # write the table directly to the DB
   message(paste("Importing flight data from", csv, "to the database..."))
-  if (DBI::dbWriteTable(obj$con, "flights", csv, append = TRUE, ...)) {
+  if (db_type(obj) %in% c("postgres", "postgresql")) {
+    # I'll take the long way around the postgres problem, reading
+    # in the csv and writing to db from the data table.
+    # But could we not apply a direct SQL COPY form the CSV,
+    # with directions to ignore the header?
+    month <- read_csv(csv)
+    if (DBI::dbWriteTable(obj$con, "flights", month, append = TRUE,
+                          row.names = FALSE,...)) {
+      message("Data was successfully written to database.")
+    }
+  } else if (DBI::dbWriteTable(obj$con, "flights", csv, append = TRUE, ...)) {
     message("Data was successfully written to database.")
   }
 }

@@ -41,14 +41,21 @@ clean_flights <- function(path_zip) {
   # can't get col_types argument to work!
   # readr::read_csv(path_zip, col_types = col_types) %>%
   
-  # move away from deprecated SE versions
+  # Move away from deprecated SE versions of data verbs.
+  # Also, write_csv writes out 1000 (and presumably also 2000)
+  # in scientific notation.  Hence (for example) a 10am scheduled 
+  # departure time will be written as 1e3, which cannot be interpreted as
+  # smallint by PostgreSQL.  Hence we apply format() to any numerical
+  # variables that could take values 1000 or 2000.
+  # Seems to work with MySQL, too.
   readr::read_csv(path_zip) %>%
-    mutate(dep_time = as.numeric(DepTime), 
-           sched_dep_time = as.numeric(CRSDepTime),
-           arr_time = as.numeric(ArrTime), 
-           sched_arr_time = as.numeric(CRSArrTime)) %>% 
+    mutate(year = format(Year, scientific = FALSE),
+           dep_time = format(DepTime, scientific = FALSE), 
+           sched_dep_time = format(CRSDepTime, scientific = FALSE),
+           arr_time = format(ArrTime, scientific = FALSE), 
+           sched_arr_time = format(CRSArrTime, scientific = FALSE)) %>% 
     select(
-      year = Year, month = Month, day = DayofMonth, 
+      year, month = Month, day = DayofMonth, 
       dep_time, sched_dep_time, dep_delay = DepDelay, 
       arr_time, sched_arr_time, arr_delay = ArrDelay, 
       carrier = Carrier,  tailnum = TailNum, flight = FlightNum,
@@ -58,10 +65,12 @@ clean_flights <- function(path_zip) {
 #    filter(origin %in% c("JFK", "LGA", "EWR")) %>%
     mutate(hour = as.numeric(sched_dep_time) %/% 100,
            minute = as.numeric(sched_dep_time) %% 100,
-           time_hour = lubridate::make_datetime(year, month, day, hour, minute, 0)) %>%
+           time_hour = lubridate::make_datetime(as.numeric(year),
+                                                month, day, hour, minute, 0)) %>%
 #    mutate_(tailnum = ~ifelse(tailnum == "", NA, tailnum)) %>%
     arrange(year, month, day, dep_time) %>%
     readr::write_csv(path = path_csv)
+    
 }
 
 ## deprecated
