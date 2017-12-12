@@ -42,22 +42,29 @@ clean_flights <- function(path_zip) {
   # readr::read_csv(path_zip, col_types = col_types) %>%
   
   # Move away from deprecated SE versions of data verbs.
-  # Also, write_csv writes out 1000 (and presumably also 2000)
-  # in scientific notation.  Hence (for example) a 10am scheduled 
-  # departure time will be written as 1e3, which cannot be interpreted as
-  # smallint by PostgreSQL.  Hence we apply format() to any numerical
-  # variables that could take values 1000 or 2000.
-  # Seems to work with MySQL, too.
   readr::read_csv(path_zip) %>%
     mutate(year = format(Year, scientific = FALSE),
-           dep_time = format(DepTime, scientific = FALSE), 
+           dep_time = format(DepTime, scientific = FALSE),
+           dep_delay = format(DepDelay, scientific = FALSE),
            sched_dep_time = format(CRSDepTime, scientific = FALSE),
-           arr_time = format(ArrTime, scientific = FALSE), 
-           sched_arr_time = format(CRSArrTime, scientific = FALSE)) %>% 
+           arr_time = format(ArrTime, scientific = FALSE),
+           arr_delay = format(ArrDelay, scientific = FALSE),
+           sched_arr_time = format(CRSArrTime, scientific = FALSE)) %>%
+    # Also, write_csv writes out 1000 (and presumably also 2000)
+    # in scientific notation.  Hence (for example) a 10am scheduled 
+    # departure time will be written as 1e3, which cannot be interpreted as
+    # smallint by PostgreSQL.  Hence we apply format() to any numerical
+    # variables that could take values 1000 or 2000.
+    # Seems to work with MySQL, too.
+    # mutate(year = as.numeric(Year),
+    #        dep_time = as.numeric(DepTime), 
+    #        sched_dep_time = as.numeric(CRSDepTime),
+    #        arr_time = as.numeric(ArrTime), 
+    #        sched_arr_time = as.numeric(CRSArrTime)) %>% 
     select(
       year, month = Month, day = DayofMonth, 
-      dep_time, sched_dep_time, dep_delay = DepDelay, 
-      arr_time, sched_arr_time, arr_delay = ArrDelay, 
+      dep_time, sched_dep_time, dep_delay = dep_delay, 
+      arr_time, sched_arr_time, arr_delay = arr_delay, 
       carrier = Carrier,  tailnum = TailNum, flight = FlightNum,
       origin = Origin, dest = Dest, air_time = AirTime, distance = Distance,
       cancelled = Cancelled, diverted = Diverted
