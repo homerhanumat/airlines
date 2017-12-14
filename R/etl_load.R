@@ -100,17 +100,29 @@ push_month <- function(obj, csv, ...) {
   if (db_type(obj) %in% c("postgres", "postgresql")) {
     # I'll take the long way around the postgres problem, reading
     # in the csv and writing to db from the data table.
-    # But could we not apply a direct SQL COPY from the CSV,
-    # with directions to ignore the header?
     
     # Also, we should not yet use the RPostgres package, as dplyr
     # does not yet support it as a backend.
     
-    month <- read_csv(csv)
-    if (DBI::dbWriteTable(obj$con, "flights", month, append = TRUE,
-                          row.names = FALSE,...)) {
+    # month <- read_csv(csv)
+    # if (DBI::dbWriteTable(obj$con, "flights", month, append = TRUE,
+    #                       row.names = FALSE,...)) {
+    #   message("Data was successfully written to database.")
+    # }
+    
+    # But could we not apply a direct sql COPY from the csv file,
+    # with directions to ignore the header?  Let's try:
+    sql <- paste0("COPY flights FROM '", csv, "' DELIMITER ',' CSV HEADER;")
+    res <- tryCatch(dbExecute(obj$con, sql),
+                    error = function(e) {
+                      message(paste("Unable to load flight data from", 
+                                    csv, "to the database..."))
+                      print(e)
+                    })
+    if ( !is.null(res) ) {
       message("Data was successfully written to database.")
     }
+    
   } else if (DBI::dbWriteTable(obj$con, "flights", csv, append = TRUE, ...)) {
     message("Data was successfully written to database.")
   }

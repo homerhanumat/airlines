@@ -42,6 +42,12 @@ clean_flights <- function(path_zip) {
   # readr::read_csv(path_zip, col_types = col_types) %>%
   
   # Move away from deprecated SE versions of data verbs.
+  # Also, write_csv writes out 1000 (and presumably also x000)
+  # in scientific notation.  Hence (for example) a 10am scheduled 
+  # departure time will be written as 1e3, which cannot be interpreted as
+  # smallint by PostgreSQL.  Hence we apply format() to any numerical
+  # variables that could take values x000.
+  # Seems to work with MySQL, too.
   readr::read_csv(path_zip) %>%
     mutate(year = format(Year, scientific = FALSE),
            dep_time = format(DepTime, scientific = FALSE),
@@ -50,17 +56,12 @@ clean_flights <- function(path_zip) {
            arr_time = format(ArrTime, scientific = FALSE),
            arr_delay = format(ArrDelay, scientific = FALSE),
            sched_arr_time = format(CRSArrTime, scientific = FALSE)) %>%
-    # Also, write_csv writes out 1000 (and presumably also 2000)
-    # in scientific notation.  Hence (for example) a 10am scheduled 
-    # departure time will be written as 1e3, which cannot be interpreted as
-    # smallint by PostgreSQL.  Hence we apply format() to any numerical
-    # variables that could take values 1000 or 2000.
-    # Seems to work with MySQL, too.
-    # mutate(year = as.numeric(Year),
-    #        dep_time = as.numeric(DepTime), 
-    #        sched_dep_time = as.numeric(CRSDepTime),
-    #        arr_time = as.numeric(ArrTime), 
-    #        sched_arr_time = as.numeric(CRSArrTime)) %>% 
+    mutate(dep_time = ifelse(grepl("NA", dep_time), NA, dep_time),
+           dep_delay = ifelse(grepl("NA", dep_delay), NA, dep_delay),
+           sched_dep_time = ifelse(grepl("NA", sched_dep_time), NA, sched_dep_time),
+           arr_time = ifelse(grepl("NA", arr_time), NA, arr_time),
+           sched_arr_time = ifelse(grepl("NA", sched_arr_time), NA, sched_arr_time),
+           arr_delay = ifelse(grepl("NA", arr_delay), NA, arr_delay)) %>%
     select(
       year, month = Month, day = DayofMonth, 
       dep_time, sched_dep_time, dep_delay = dep_delay, 
@@ -76,7 +77,7 @@ clean_flights <- function(path_zip) {
                                                 month, day, hour, minute, 0)) %>%
 #    mutate_(tailnum = ~ifelse(tailnum == "", NA, tailnum)) %>%
     arrange(year, month, day, dep_time) %>%
-    readr::write_csv(path = path_csv)
+    readr::write_csv(path = path_csv, na = "")
     
 }
 
