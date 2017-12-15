@@ -41,6 +41,18 @@ clean_flights <- function(path_zip) {
   # can't get col_types argument to work!
   # readr::read_csv(path_zip, col_types = col_types) %>%
   
+  # Some tailnumbers are in Latin-1 encoding, for 2001 months 1-12
+  # and for 2002 monhts 1 and 2
+  # detect these months:
+  latin_month <- function(path_zip) {
+    matches <- unlist(regmatches(path_zip, 
+                                 m = regexec("_(\\d{4})_(\\d{1,2})", 
+                                             text = path_zip)))
+    year <- as.numeric(matches[2])
+    month <- as.numeric(matches[3])
+    year == 2001 || (year == 2002 & month %in% 1:2)
+  }
+  
   # Move away from deprecated SE versions of data verbs.
   # Also, write_csv writes out 1000 (and presumably also x000)
   # in scientific notation.  Hence (for example) a 10am scheduled 
@@ -48,7 +60,7 @@ clean_flights <- function(path_zip) {
   # smallint by PostgreSQL.  Hence we apply format() to any numerical
   # variables that could take values x000.
   # Seems to work with MySQL, too.
-  readr::read_csv(path_zip) %>%
+  flights_df <- readr::read_csv(path_zip) %>%
     mutate(year = format(Year, scientific = FALSE),
            dep_time = format(DepTime, scientific = FALSE),
            dep_delay = format(DepDelay, scientific = FALSE),
@@ -74,8 +86,17 @@ clean_flights <- function(path_zip) {
     mutate(hour = as.numeric(sched_dep_time) %/% 100,
            minute = as.numeric(sched_dep_time) %% 100,
            time_hour = lubridate::make_datetime(as.numeric(year),
-                                                month, day, hour, minute, 0)) %>%
-#    mutate_(tailnum = ~ifelse(tailnum == "", NA, tailnum)) %>%
+                                                month, day, hour, minute, 0))
+  
+  if ( latin_month(path_zip) ) {
+    message("Addressing failed parses in tail number:\n")
+    message("converting Latin-1 tail numbers to UTF-8 so data will load... \n")
+    flights_df <-
+      flights_df %>% 
+      mutate(tailnum = iconv(tailnum, "latin1", "UTF-8"))
+  }
+    
+  flights_df %>% 
     arrange(year, month, day, dep_time) %>%
     readr::write_csv(path = path_csv, na = "")
     
