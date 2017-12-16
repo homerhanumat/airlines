@@ -1,6 +1,6 @@
 library(dplyr)
 
-src <- "http://registry.faa.gov/database/AR082015.zip?YouCantCcacheThis=0.43578318861107024"
+src <- "http://registry.faa.gov/database/ReleasableAircraft.zip"
 lcl <- "data-raw/planes"
 
 if (!file.exists(lcl)) {
@@ -48,14 +48,14 @@ all$type.acft <- NULL
 
 all$tailnum <- paste0("N", all$nnum)
 
-load("data/flights.rda")
+#load("data/flights.rda")
 
 planes <- all %>%
   select(
     tailnum, year, type, manufacturer = mfr, model = model,
     engines = no.eng, seats = no.seats, speed, engine
   ) %>%
-  semi_join(flights, "tailnum") %>%
+#  semi_join(flights, "tailnum") %>%
   arrange(tailnum)
 
 save(planes, file = "data/planes.rda", compress = "xz")

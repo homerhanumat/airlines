@@ -116,10 +116,10 @@ push_month <- function(obj, csv, ...) {
     res <- tryCatch(dbExecute(obj$con, sql),
                     error = function(e) {
                       message(paste("Unable to load flight data from", 
-                                    csv, "to the database..."))
+                                    csv, "to the database:"))
                       print(e)
                     })
-    if ( !is.null(res) ) {
+    if ( !("error" %in% class(res)) ) {
       message("Data was successfully written to database.")
     }
     
