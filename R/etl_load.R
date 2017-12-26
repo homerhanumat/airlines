@@ -141,10 +141,10 @@ init_carriers <- function(obj, ...) {
   
   raw <- readr::read_csv(lcl)
   carriers <- raw %>%
-    select_(carrier = ~Code, name = ~Description) %>%
+    select(carrier = Code, name = Description) %>%
     #  semi_join(flights) %>%
-    filter_(~!is.na(carrier)) %>%
-    arrange_(~carrier)
+    filter(!is.na(carrier)) %>%
+    arrange(carrier)
   
   DBI::dbWriteTable(obj$con, "carriers", 
                     as.data.frame(carriers), 
