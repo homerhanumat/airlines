@@ -52,6 +52,41 @@ ontime %>%
   etl_update(years = 1987:2016)
 ```
 
+### Note on MySQL 8.0
+
+(Based on tests conducted with MySQL Release Candidate 8.0.3.)
+
+Package **RMySQL** does not connect with the latest version of MySQL server.  Use **RMariaDB** instead and connect directly with **DBI**, then use **dplyr**'s `src_dbi()`:
+
+```{r eval = FALSE}
+install.packages("RMariaDB")
+db <- DBI::dbConnect(drv=RMariaDB::MariaDB(),
+                     user = "xxx",  # or read credentials from file
+                     password = "xxx", 
+                     host = "localhost",
+                     dbname = "airlines",
+                     unix.sock = "/var/run/mysqld/mysqld.sock" # likely linux)
+con <- dbplyr::src_dbi(db)
+airlines <- etl("airlines", con, dir = "~/dumps/airlines")
+```
+
+By default Version 8 does not permit reading from files.  To allow the CSV files to be read into tables, modify the system `my.cnf` (on Linux likely `/etc/mysql/my.cnf`) to include the following:
+
+```
+[mysqld]
+local-infile
+
+[mysql]
+local-infile
+```
+
+Then restart the server, perhaps by running:
+
+```
+sudo service restart mysql
+```
+
+
 ## Verify
 
 There are over 300 months worth of files to download, and they will occupy more than 21 GB in their zipped and unzipped states. 
